@@ -4,25 +4,33 @@ class Product:
     def __init__(self, name: str, description: str, price: float, quantity: int):
         self.name = name
         self.description = description
-        self.__price = price  # Приватный атрибут
+        self.__price = price  # ПРИВАТНЫЙ атрибут (два подчёркивания!)
         self.quantity = quantity
 
     @property
     def price(self):
-        """Геттер для цены."""
+        """Геттер для цены. Возвращает значение приватного атрибута."""
         return self.__price
 
     @price.setter
-    def price(self, new_price: float):
-        """Сеттер для цены с проверкой."""
-        if new_price <= 0:
+    def price(self, value: float):
+        """Сеттер для цены с проверкой на положительное значение."""
+        if value <= 0:
             print("Цена не должна быть нулевая или отрицательная")
-            return  # Не меняем цену
-        self.__price = new_price
+        else:
+            self.__price = value
 
     @classmethod
     def new_product(cls, product_data: dict):
-        """Класс-метод для создания продукта из словаря."""
+        """
+        Класс-метод для создания продукта из словаря.
+
+        Args:
+            product_data: Словарь с ключами: name, description, price, quantity
+
+        Returns:
+            Product: Экземпляр класса Product
+        """
         return cls(
             name=product_data['name'],
             description=product_data['description'],
@@ -30,53 +38,51 @@ class Product:
             quantity=product_data['quantity']
         )
 
-    def __str__(self):
-        return f"{self.name}, {self.price} руб. Остаток: {self.quantity} шт."
-
-    def __repr__(self):
-        return f"Product(name='{self.name}', price={self.price}, quantity={self.quantity})"
-
 
 class Category:
     """Класс для представления категории товаров."""
 
-    category_count = 0  # Количество категорий
-    product_count = 0  # Количество товаров
+    # Класс-атрибуты
+    category_count = 0
+    product_count = 0
 
     def __init__(self, name: str, description: str, products: list = None):
         self.name = name
         self.description = description
-        self.__products = []  # ПРИВАТНЫЙ атрибут
+        self.__products = []  # ПРИВАТНЫЙ атрибут (два подчёркивания!)
 
-        # Добавляем продукты через метод add_product
+        # Увеличиваем счётчик категорий
+        Category.category_count += 1
+
+        # Добавляем товары, если они переданы
         if products:
             for product in products:
                 self.add_product(product)
 
-        Category.category_count += 1
-
     def add_product(self, product):
-        """Добавляет продукт в приватный список продуктов."""
+        """
+        Добавляет продукт в приватный атрибут __products.
+
+        Args:
+            product: Объект класса Product
+        """
         self.__products.append(product)
-        Category.product_count += 1  # Увеличиваем счетчик товаров
+        Category.product_count += 1  # Увеличиваем счётчик продуктов на 1
 
     @property
     def products(self):
-        """Геттер, возвращающий строку с информацией о товарах."""
-        if not self.__products:
-            return "В этой категории пока нет товаров."
+        """
+        Геттер для приватного атрибута __products.
 
+        Returns:
+            str: Строка со всеми продуктами по шаблону
+        """
         result = ""
         for product in self.__products:
+            # Строгий шаблон: "Название продукта, X руб. Остаток: X шт.\n"
             result += f"{product.name}, {product.price} руб. Остаток: {product.quantity} шт.\n"
-        return result.strip()
-
-    def get_products_list(self):
-        """Вспомогательный метод для получения списка объектов."""
-        return self.__products
+        return result.rstrip()  # Убираем последний перенос строки
 
     def __len__(self):
+        """Возвращает количество товаров в категории."""
         return len(self.__products)
-
-    def __repr__(self):
-        return f"Category(name='{self.name}', products_count={len(self)})"
