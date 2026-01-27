@@ -1,5 +1,5 @@
 class Product:
-    """Класс для представления товара в магазине."""
+    """Базовый класс для представления товара в магазине."""
 
     def __init__(self, name: str, description: str, price: float, quantity: int):
         self.name = name
@@ -28,18 +28,40 @@ class Product:
         )
 
     def __str__(self):
-        """Строковое представление продукта: Название продукта, X руб. Остаток: X шт."""
         return f"{self.name}, {self.price} руб. Остаток: {self.quantity} шт."
 
     def __add__(self, other):
         """
-        Магический метод сложения.
-        Возвращает сумму произведений цены на количество у двух объектов.
+        Магический метод сложения с проверкой типов.
+        Можно складывать только товары одного класса.
         """
-        if not isinstance(other, Product):
-            raise TypeError("Можно складывать только объекты Product")
+        if type(self) != type(other):
+            raise TypeError("Нельзя складывать товары разных классов")
 
         return (self.price * self.quantity) + (other.price * other.quantity)
+
+
+class Smartphone(Product):
+    """Класс для представления смартфона."""
+
+    def __init__(self, name: str, description: str, price: float, quantity: int,
+                 efficiency: float, model: str, memory: int, color: str):
+        super().__init__(name, description, price, quantity)
+        self.efficiency = efficiency  # производительность
+        self.model = model  # модель
+        self.memory = memory  # объем встроенной памяти
+        self.color = color  # цвет
+
+
+class LawnGrass(Product):
+    """Класс для представления газонной травы."""
+
+    def __init__(self, name: str, description: str, price: float, quantity: int,
+                 country: str, germination_period: str, color: str):
+        super().__init__(name, description, price, quantity)
+        self.country = country  # страна-производитель
+        self.germination_period = germination_period  # срок прорастания
+        self.color = color  # цвет
 
 
 class Category:
@@ -60,23 +82,29 @@ class Category:
                 self.add_product(product)
 
     def add_product(self, product):
+        """
+        Добавляет продукт в категорию.
+
+        Args:
+            product: Объект класса Product или его наследников
+
+        Raises:
+            TypeError: Если переданный объект не является продуктом
+        """
+        if not isinstance(product, Product):
+            raise TypeError("Можно добавлять только продукты или их наследники")
+
         self.__products.append(product)
         Category.product_count += 1
 
     @property
     def products(self):
-        """Геттер для приватного атрибута __products."""
         result = ""
         for product in self.__products:
             result += str(product) + "\n"
         return result.rstrip()
 
     def __str__(self):
-        """
-        Строковое представление категории.
-        Рассчитывает общее количество товаров на складе (quantity)
-        для каждого продукта в приватном атрибуте products.
-        """
         total_quantity = 0
         for product in self.__products:
             total_quantity += product.quantity
@@ -86,5 +114,4 @@ class Category:
         return len(self.__products)
 
     def get_products_list(self):
-        """Возвращает список объектов продуктов."""
         return self.__products
