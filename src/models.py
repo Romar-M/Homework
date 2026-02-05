@@ -23,49 +23,50 @@ class LogCreationMixin:
     """Миксин для логирования создания объектов."""
 
     def __init__(self, *args, **kwargs):
-        # Вызываем super().__init__ только если есть родительский класс с __init__
+        # Сохраняем аргументы для вывода
+        self._init_args = args
+        self._init_kwargs = kwargs
+
+        # Вызываем следующий __init__ в MRO
         if hasattr(super(), '__init__'):
             super().__init__(*args, **kwargs)
 
-        # Получаем имя класса
+    def _log_creation(self):
+        """Логирует создание объекта."""
         class_name = self.__class__.__name__
-
-        # Формируем аргументы для вывода
-        if class_name == 'Product':
-            name, description, price, quantity = args
-            print(f"{class_name}('{name}', '{description}', {price}, {quantity})")
-        elif class_name == 'Smartphone':
-            name, description, price, quantity, efficiency, model, memory, color = args
-            print(
-                f"{class_name}('{name}', '{description}', {price}, {quantity}, {efficiency}, '{model}', {memory}, '{color}')")
-        elif class_name == 'LawnGrass':
-            name, description, price, quantity, country, germination_period, color = args
-            print(
-                f"{class_name}('{name}', '{description}', {price}, {quantity}, '{country}', '{germination_period}', '{color}')")
+        args_str = ", ".join([repr(arg) for arg in self._init_args])
+        print(f"{class_name}({args_str})")
 
 
-class Product(BaseProduct, LogCreationMixin):
+class Product(LogCreationMixin, BaseProduct):
     """Класс для представления товара в магазине."""
 
     def __init__(self, name: str, description: str, price: float, quantity: int):
-        self.name = name
+        # Сохраняем атрибуты напрямую (не через property в __init__)
+        self._name = name
         self.description = description
         self.__price = price
         self.quantity = quantity
 
-        # Инициализация миксина
+        # Инициализируем миксин
         super().__init__(name, description, price, quantity)
+
+        # Логируем создание
+        self._log_creation()
 
     @property
     def name(self):
-        return self._name if hasattr(self, '_name') else self.name
+        """Геттер для названия."""
+        return self._name
 
     @property
     def price(self):
+        """Геттер для цены."""
         return self.__price
 
     @price.setter
     def price(self, value: float):
+        """Сеттер для цены с проверкой."""
         if value <= 0:
             print("Цена не должна быть нулевая или отрицательная")
         else:
@@ -73,6 +74,7 @@ class Product(BaseProduct, LogCreationMixin):
 
     @classmethod
     def new_product(cls, product_data: dict):
+        """Класс-метод для создания продукта из словаря."""
         return cls(
             name=product_data['name'],
             description=product_data['description'],
@@ -81,14 +83,17 @@ class Product(BaseProduct, LogCreationMixin):
         )
 
     def __str__(self):
+        """Строковое представление продукта."""
         return f"{self.name}, {self.price} руб. Остаток: {self.quantity} шт."
 
     def __add__(self, other):
+        """Магический метод сложения с проверкой типов."""
         if type(self) != type(other):
             raise TypeError("Нельзя складывать товары разных классов")
         return (self.price * self.quantity) + (other.price * other.quantity)
 
     def __repr__(self):
+        """Представление для отладки."""
         return f"{self.__class__.__name__}('{self.name}', '{self.description}', {self.price}, {self.quantity})"
 
 
@@ -97,14 +102,20 @@ class Smartphone(Product):
 
     def __init__(self, name: str, description: str, price: float, quantity: int,
                  efficiency: float, model: str, memory: int, color: str):
-        super().__init__(name, description, price, quantity)
+        # Сохраняем дополнительные атрибуты
         self.efficiency = efficiency
         self.model = model
         self.memory = memory
         self.color = color
 
+        # Вызываем родительский __init__
+        super().__init__(name, description, price, quantity)
+
     def __repr__(self):
-        return f"Smartphone('{self.name}', '{self.description}', {self.price}, {self.quantity}, {self.efficiency}, '{self.model}', {self.memory}, '{self.color}')"
+        """Представление для отладки."""
+        return (f"Smartphone('{self.name}', '{self.description}', {self.price}, "
+                f"{self.quantity}, {self.efficiency}, '{self.model}', "
+                f"{self.memory}, '{self.color}')")
 
 
 class LawnGrass(Product):
@@ -112,13 +123,19 @@ class LawnGrass(Product):
 
     def __init__(self, name: str, description: str, price: float, quantity: int,
                  country: str, germination_period: str, color: str):
-        super().__init__(name, description, price, quantity)
+        # Сохраняем дополнительные атрибуты
         self.country = country
         self.germination_period = germination_period
         self.color = color
 
+        # Вызываем родительский __init__
+        super().__init__(name, description, price, quantity)
+
     def __repr__(self):
-        return f"LawnGrass('{self.name}', '{self.description}', {self.price}, {self.quantity}, '{self.country}', '{self.germination_period}', '{self.color}')"
+        """Представление для отладки."""
+        return (f"LawnGrass('{self.name}', '{self.description}', {self.price}, "
+                f"{self.quantity}, '{self.country}', '{self.germination_period}', "
+                f"'{self.color}')")
 
 
 class Category:
@@ -139,6 +156,7 @@ class Category:
                 self.add_product(product)
 
     def add_product(self, product):
+        """Добавляет продукт в категорию."""
         if not isinstance(product, Product):
             raise TypeError("Можно добавлять только продукты или их наследники")
 
@@ -147,19 +165,23 @@ class Category:
 
     @property
     def products(self):
+        """Геттер для списка товаров."""
         result = ""
         for product in self.__products:
             result += str(product) + "\n"
         return result.rstrip()
 
     def __str__(self):
+        """Строковое представление категории."""
         total_quantity = 0
         for product in self.__products:
             total_quantity += product.quantity
         return f"{self.name}, количество продуктов: {total_quantity} шт."
 
     def __len__(self):
+        """Возвращает количество товаров в категории."""
         return len(self.__products)
 
     def get_products_list(self):
+        """Возвращает список объектов продуктов."""
         return self.__products
