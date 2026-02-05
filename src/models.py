@@ -1,11 +1,64 @@
-class Product:
-    """Базовый класс для представления товара в магазине."""
+from abc import ABC, abstractmethod
+
+
+class BaseProduct(ABC):
+    """Абстрактный базовый класс для всех продуктов."""
+
+    @abstractmethod
+    def __init__(self, name: str, description: str, price: float, quantity: int):
+        pass
+
+    @property
+    @abstractmethod
+    def name(self):
+        pass
+
+    @property
+    @abstractmethod
+    def price(self):
+        pass
+
+
+class LogCreationMixin:
+    """Миксин для логирования создания объектов."""
+
+    def __init__(self, *args, **kwargs):
+        # Вызываем super().__init__ только если есть родительский класс с __init__
+        if hasattr(super(), '__init__'):
+            super().__init__(*args, **kwargs)
+
+        # Получаем имя класса
+        class_name = self.__class__.__name__
+
+        # Формируем аргументы для вывода
+        if class_name == 'Product':
+            name, description, price, quantity = args
+            print(f"{class_name}('{name}', '{description}', {price}, {quantity})")
+        elif class_name == 'Smartphone':
+            name, description, price, quantity, efficiency, model, memory, color = args
+            print(
+                f"{class_name}('{name}', '{description}', {price}, {quantity}, {efficiency}, '{model}', {memory}, '{color}')")
+        elif class_name == 'LawnGrass':
+            name, description, price, quantity, country, germination_period, color = args
+            print(
+                f"{class_name}('{name}', '{description}', {price}, {quantity}, '{country}', '{germination_period}', '{color}')")
+
+
+class Product(BaseProduct, LogCreationMixin):
+    """Класс для представления товара в магазине."""
 
     def __init__(self, name: str, description: str, price: float, quantity: int):
         self.name = name
         self.description = description
         self.__price = price
         self.quantity = quantity
+
+        # Инициализация миксина
+        super().__init__(name, description, price, quantity)
+
+    @property
+    def name(self):
+        return self._name if hasattr(self, '_name') else self.name
 
     @property
     def price(self):
@@ -31,14 +84,12 @@ class Product:
         return f"{self.name}, {self.price} руб. Остаток: {self.quantity} шт."
 
     def __add__(self, other):
-        """
-        Магический метод сложения с проверкой типов.
-        Можно складывать только товары одного класса.
-        """
         if type(self) != type(other):
             raise TypeError("Нельзя складывать товары разных классов")
-
         return (self.price * self.quantity) + (other.price * other.quantity)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}('{self.name}', '{self.description}', {self.price}, {self.quantity})"
 
 
 class Smartphone(Product):
@@ -47,10 +98,13 @@ class Smartphone(Product):
     def __init__(self, name: str, description: str, price: float, quantity: int,
                  efficiency: float, model: str, memory: int, color: str):
         super().__init__(name, description, price, quantity)
-        self.efficiency = efficiency  # производительность
-        self.model = model  # модель
-        self.memory = memory  # объем встроенной памяти
-        self.color = color  # цвет
+        self.efficiency = efficiency
+        self.model = model
+        self.memory = memory
+        self.color = color
+
+    def __repr__(self):
+        return f"Smartphone('{self.name}', '{self.description}', {self.price}, {self.quantity}, {self.efficiency}, '{self.model}', {self.memory}, '{self.color}')"
 
 
 class LawnGrass(Product):
@@ -59,9 +113,12 @@ class LawnGrass(Product):
     def __init__(self, name: str, description: str, price: float, quantity: int,
                  country: str, germination_period: str, color: str):
         super().__init__(name, description, price, quantity)
-        self.country = country  # страна-производитель
-        self.germination_period = germination_period  # срок прорастания
-        self.color = color  # цвет
+        self.country = country
+        self.germination_period = germination_period
+        self.color = color
+
+    def __repr__(self):
+        return f"LawnGrass('{self.name}', '{self.description}', {self.price}, {self.quantity}, '{self.country}', '{self.germination_period}', '{self.color}')"
 
 
 class Category:
@@ -82,15 +139,6 @@ class Category:
                 self.add_product(product)
 
     def add_product(self, product):
-        """
-        Добавляет продукт в категорию.
-
-        Args:
-            product: Объект класса Product или его наследников
-
-        Raises:
-            TypeError: Если переданный объект не является продуктом
-        """
         if not isinstance(product, Product):
             raise TypeError("Можно добавлять только продукты или их наследники")
 
